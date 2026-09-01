@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install *)",
+      "Bash(cd /d C:\\\\Users\\\\SM KAIF\\\\OneDrive\\\\Documents\\\\Desktop\\\\ContextAI/src/backend)",
+      "Bash(python -m pytest tests/integration/test_api.py -v)"
+    ]
+  }
+}

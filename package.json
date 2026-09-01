@@ -1,0 +1,30 @@
+{
+  "name": "contextai",
+  "version": "0.1.0",
+  "description": "AI Desktop Intelligence & Automation Platform",
+  "private": true,
+  "scripts": {
+    "dev": "cd src/frontend && pnpm dev",
+    "build": "cd src/frontend && pnpm build",
+    "preview": "cd src/frontend && pnpm preview",
+    "tauri:dev": "cd src/tauri && cargo tauri dev",
+    "tauri:build": "cd src/tauri && cargo tauri build",
+    "backend:dev": "cd src/backend && .venv\\Scripts\\activate && uvicorn app.main:app --reload --port 8000",
+    "backend:install": "cd src/backend && python -m venv .venv && .venv\\Scripts\\activate && pip install -r requirements.txt",
+    "lint:frontend": "cd src/frontend && pnpm lint",
+    "lint:backend": "cd src/backend && .venv\\Scripts\\activate && ruff check . && mypy .",
+    "lint:rust": "cd src/tauri && cargo clippy -- -D warnings",
+    "test:frontend": "cd src/frontend && pnpm test",
+    "test:backend": "cd src/backend && .venv\\Scripts\\activate && pytest",
+    "test:rust": "cd src/tauri && cargo test",
+    "db:migrate": "cd src/backend && .venv\\Scripts\\activate && alembic upgrade head",
+    "db:revision": "cd src/backend && .venv\\Scripts\\activate && alembic revision --autogenerate -m"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

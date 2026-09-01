@@ -1,0 +1,89 @@
+# Dependencies
+node_modules/
+src/frontend/node_modules/
+src/backend/.venv/
+src/backend/__pycache__/
+src/backend/.pytest_cache/
+src/backend/*.egg-info/
+src/tauri/target/
+
+# Build outputs
+dist/
+build/
+*.exe
+*.msi
+*.dmg
+*.app
+*.deb
+*.rpm
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+src/backend/logs/
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# ML models
+ml/models/*/checkpoints/
+ml/models/*/*.pt
+ml/models/*/*.pth
+ml/models/*/*.bin
+ml/datasets/
+
+# Vector store
+data/vectors/
+*.faiss
+*.index
+
+# Cache
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage/
+
+# Tauri
+src/tauri/target/
+src/tauri/**/target/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# Rust
+Cargo.lock
+target/
+
+# Temporary files
+*.tmp
+*.temp
+tmp/
+temp/
+
+# OS specific
+*.lnk
