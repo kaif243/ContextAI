@@ -253,4 +253,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for development guidelines.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for development guidelines.# ContextAI
