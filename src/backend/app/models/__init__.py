@@ -7,6 +7,7 @@ from app.models.clipboard import ClipboardItem
 from app.models.file_index import FileIndex, FileChunk
 from app.models.memory import MemoryItem
 from app.models.agent import AgentTask, AgentStep
+from app.models.screenshot import Screenshot, ScreenAnalysis
 
 __all__ = [
     "BaseModel",
@@ -18,4 +19,6 @@ __all__ = [
     "MemoryItem",
     "AgentTask",
     "AgentStep",
+    "Screenshot",
+    "ScreenAnalysis",
 ]

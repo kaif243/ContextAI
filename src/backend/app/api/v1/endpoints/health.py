@@ -7,9 +7,11 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
+from app.classification import get_activity_classifier
 from app.core.database import get_db
 from app.core.config import settings, llm_settings
 from app.core.logging import get_logger
+from app.ocr import get_ocr_provider
 
 logger = get_logger(__name__)
 
@@ -23,6 +25,7 @@ class ServiceStatus(BaseModel):
     vector_store: bool
     ml_models: bool
     ocr: bool
+    activity_classifier: bool
 
 
 class HealthResponse(BaseModel):
@@ -52,14 +55,22 @@ def check_services_health() -> dict[str, bool]:
     Returns:
         Dictionary with service health status.
     """
-    # For Phase 1, we check what's actually available
-    services = {
-        "database": True,  # Will be checked in endpoint
-        "vector_store": False,  # Not implemented in Phase 1
-        "ml_models": False,  # Not implemented in Phase 1
-        "ocr": False,  # Not implemented in Phase 1
-    }
+    try:
+        ocr_available = get_ocr_provider().is_available()
+    except Exception:  # noqa: BLE001
+        ocr_available = False
+    try:
+        classifier_available = get_activity_classifier().is_available()
+    except Exception:  # noqa: BLE001
+        classifier_available = False
 
+    services = {
+        "database": True,  # checked separately in endpoint
+        "vector_store": False,  # Phase 6
+        "ml_models": False,  # Phase 5
+        "ocr": ocr_available,
+        "activity_classifier": classifier_available,
+    }
     return services
 
 

@@ -249,6 +249,44 @@ impl BackendClient {
         Ok(result)
     }
 
+    /// Push a locally-captured PNG (already on disk) to the backend so
+    /// OCR / classification can run. The backend reads the file from
+    /// `image_path` so we don't have to base64 a multi-MB image across
+    /// the wire.
+    pub async fn capture_screen_via_path(
+        &self,
+        path: &std::path::Path,
+        width: u32,
+        height: u32,
+    ) -> anyhow::Result<ScreenCaptureResponse> {
+        use serde_json::json;
+        let url = format!("{}/api/v1/screen/capture", self.base_url);
+        debug!("Screen capture (path) -> backend: {}", path.display());
+
+        let body = json!({
+            "image_path": path.to_string_lossy(),
+            "width": width,
+            "height": height,
+            "save_to_disk": false,
+            "run_ocr": true,
+        });
+        let response = self.http_client.post(&url).json(&body).send().await?;
+
+        if !response.status().is_success() {
+            let error = response.text().await.unwrap_or_default();
+            return Ok(ScreenCaptureResponse {
+                success: false,
+                image_path: Some(path.to_string_lossy().to_string()),
+                width,
+                height,
+                error: Some(error),
+            });
+        }
+
+        let result: ScreenCaptureResponse = response.json().await?;
+        Ok(result)
+    }
+
     pub async fn get_clipboard_history(
         &self,
         limit: Option<usize>,

@@ -6,14 +6,16 @@ import type {
   HealthResponse,
   Settings,
   UpdateSettingsRequest,
-  ScreenCaptureRequest,
-  ScreenCaptureResponse,
   ClipboardHistoryResponse,
   FileIndexRequest,
   FileIndexResponse,
   FileSearchRequest,
   FileSearchResponse,
 } from '@/types';
+import {
+  captureScreenNow,
+} from '@/services/screen';
+import type { CaptureScreenNowResponse } from '@/types';
 
 export const api = {
   // App info
@@ -28,8 +30,7 @@ export const api = {
     invoke('update_settings', { request }),
 
   // Screen
-  captureScreen: (request: ScreenCaptureRequest): Promise<ScreenCaptureResponse> =>
-    invoke('screen_capture', { request }),
+  captureScreenNow: (): Promise<CaptureScreenNowResponse> => captureScreenNow(),
 
   // Clipboard
   getClipboardHistory: (limit?: number, offset?: number): Promise<ClipboardHistoryResponse> =>

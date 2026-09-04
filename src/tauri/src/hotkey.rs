@@ -17,7 +17,9 @@ impl GlobalHotkeyManager {
     }
 
     pub async fn register_hotkeys(&self, app: AppHandle) -> anyhow::Result<()> {
-        let shortcuts = vec!["Ctrl+Space"];
+        // Ctrl+Space  -> toggle the main window (Phase 1, do not change).
+        // Ctrl+Shift+S -> trigger a screen capture (Phase 2).
+        let shortcuts = vec!["Ctrl+Space", "Ctrl+Shift+S"];
 
         for shortcut_str in shortcuts {
             match self.register_shortcut(&app, shortcut_str).await {
@@ -31,6 +33,18 @@ impl GlobalHotkeyManager {
             }
         }
 
+        Ok(())
+    }
+
+    /// Emit a `screen-capture-requested` event to every webview. The
+    /// frontend listens for this and calls `capture_screen_now` to do
+    /// the actual grab. We emit rather than call directly so the
+    /// frontend can show a "Capturing..." indicator and route the
+    /// resulting image into the right panel.
+    pub async fn trigger_screen_capture(&self, app: &AppHandle) -> anyhow::Result<()> {
+        if let Some(window) = app.get_webview_window("main") {
+            window.emit("screen-capture-requested", ())?;
+        }
         Ok(())
     }
 

@@ -61,7 +61,8 @@
   "plugins": {
     "global-shortcut": {
       "shortcuts": {
-        "ctrl+space": "toggle-main-window"
+        "ctrl+space": "toggle-main-window",
+        "ctrl+shift+s": "screen-capture-requested"
       }
     },
     "clipboard-manager": {},

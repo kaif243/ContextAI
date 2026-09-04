@@ -72,6 +72,7 @@ class AppSettings(BaseSettings):
     db_path: Path = Path.home() / ".contextai" / "contextai.db"
     logs_dir: Path = Path.home() / ".contextai" / "logs"
     temp_dir: Path = Path.home() / ".contextai" / "temp"
+    screenshots_dir: Path = Path.home() / ".contextai" / "screenshots"
 
     # Privacy
     privacy_mode: bool = False
@@ -90,6 +91,21 @@ class AppSettings(BaseSettings):
 
     # Hotkey
     default_hotkey: str = "Ctrl+Space"
+
+    # Phase 2 — Screen Intelligence
+    # OCR provider. Phase 2 ships with a clean OCR interface and a deterministic
+    # mock provider for local development. Production users should switch to
+    # "tesseract" (requires pytesseract + Tesseract binary) or "paddle"
+    # (requires paddleocr + paddlepaddle; see docs/phase2-ocr.md).
+    ocr_provider: Literal["mock", "tesseract", "paddle"] = "mock"
+    # Whether OCR may run for free on captured text. Disabled by default to
+    # keep the mock dev experience predictable.
+    ocr_enabled: bool = True
+    # Maximum size of an uploaded/processed screenshot (5 MB default).
+    max_screenshot_bytes: int = 5 * 1024 * 1024
+    # Activity classifier. Phase 2 ships a baseline (rule-based) classifier.
+    # The interface is replaceable with a real ML model later.
+    activity_classifier: Literal["baseline", "ml"] = "baseline"
 
 
 @lru_cache

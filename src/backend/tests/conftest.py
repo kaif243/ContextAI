@@ -33,7 +33,7 @@ def test_db_engine():
     )
 
     # Import all models to ensure they are registered with the Base
-    from app.models import user, settings as settings_model, clipboard, file_index, memory, agent
+    from app.models import user, settings as settings_model, clipboard, file_index, memory, agent, screenshot
 
     # Create all tables
     BaseModel.metadata.create_all(bind=engine)

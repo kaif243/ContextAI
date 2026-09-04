@@ -97,6 +97,7 @@ def init_db() -> None:
         file_index,
         memory,
         agent,
+        screenshot,
     )
 
     BaseModel.metadata.create_all(bind=engine)

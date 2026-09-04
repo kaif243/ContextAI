@@ -6,6 +6,7 @@
 mod commands;
 mod hotkey;
 mod ipc;
+mod screen;
 mod state;
 mod tray;
 
@@ -21,7 +22,7 @@ use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberI
 use commands::{
     get_app_info, check_backend_health, toggle_main_window,
     get_settings, update_settings,
-    screen_capture, clipboard_get_history,
+    screen_capture, capture_screen_now, clipboard_get_history,
     file_index_folder, file_search,
 };
 use hotkey::GlobalHotkeyManager;
@@ -115,8 +116,24 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new()
             .with_handler(move |app, shortcut, event| {
-                if shortcut == "ctrl+space" && event.state == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                    let _ = toggle_main_window(app.clone());
+                if event.state != tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                    return;
+                }
+                let s = shortcut.to_string().to_lowercase();
+                match s.as_str() {
+                    "ctrl+space" => {
+                        let _ = toggle_main_window(app.clone());
+                    }
+                    "ctrl+shift+s" => {
+                        // Phase 2: trigger a screen capture. We just
+                        // forward the event to the frontend, which
+                        // calls `capture_screen_now` for the actual
+                        // bitmap grab.
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.emit("screen-capture-requested", ());
+                        }
+                    }
+                    _ => {}
                 }
             })
             .build())
@@ -135,6 +152,7 @@ pub fn run() {
             get_settings,
             update_settings,
             screen_capture,
+            capture_screen_now,
             clipboard_get_history,
             file_index_folder,
             file_search,

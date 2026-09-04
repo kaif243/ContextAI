@@ -32,6 +32,8 @@ class PermissionCategory:
         "semantic_search",
         "get_memory",
         "list_memory",
+        "capture_screenshot",
+        "analyze_screen",
     ]
 
     # YELLOW - Operations that modify data but are generally safe
@@ -44,6 +46,8 @@ class PermissionCategory:
         "classify_file",
         "extract_entities",
         "summarize_content",
+        "save_screenshot",
+        "ask_screen_question",
     ]
 
     # RED - Dangerous operations that require explicit confirmation
