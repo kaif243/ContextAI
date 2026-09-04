@@ -19,6 +19,7 @@ from app.models import (  # noqa: E402,F401
     file_index,
     memory,
     agent,
+    screenshot,
 )
 
 # Alembic Config

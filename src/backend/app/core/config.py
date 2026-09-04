@@ -107,6 +107,31 @@ class AppSettings(BaseSettings):
     # The interface is replaceable with a real ML model later.
     activity_classifier: Literal["baseline", "ml"] = "baseline"
 
+    # Phase 3 — Clipboard Intelligence
+    # When False the Tauri layer must not capture clipboard events at
+    # all. The existing ``clipboard_monitoring`` toggle acts as a master
+    # switch; the two are separate so the architecture matches the
+    # spec ("monitoring" vs "history").
+    clipboard_history_enabled: bool = True
+    # Maximum size of a single captured clipboard text. Items larger
+    # than this are dropped (and a CaptureResult(reason="too_large")
+    # is returned to the caller).
+    clipboard_max_bytes: int = 200_000
+    # Retention window in days. ``expires_at`` is computed on capture
+    # and a periodic purge removes expired rows.
+    clipboard_retention_days: int = 30
+    # When True, sensitive items are stored at all. When False the
+    # service drops them and returns only a redacted preview to the
+    # caller.
+    clipboard_store_sensitive: bool = False
+    # When True AND ``clipboard_store_sensitive`` is True, the raw
+    # secret material is stored on disk. When False, only the
+    # redacted preview is stored. The default is the safer one.
+    clipboard_keep_raw_when_sensitive: bool = False
+    # Which content classifier implementation to use. Mirrors the
+    # ``activity_classifier`` toggle for screen.
+    content_classifier: Literal["baseline", "ml"] = "baseline"
+
 
 @lru_cache
 def get_database_settings() -> DatabaseSettings:

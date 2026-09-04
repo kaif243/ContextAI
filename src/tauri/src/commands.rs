@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State, Window};
 use tracing::{info, debug, error, warn};
+use crate::clipboard as clipboard_provider;
 use crate::screen;
 use crate::state::AppState;
 
@@ -76,15 +77,48 @@ pub struct ScreenCaptureResponse {
 pub struct ClipboardItem {
     pub id: String,
     pub content: String,
+    pub redacted_content: String,
     pub content_type: String,
-    pub timestamp: String,
+    pub classification: Option<String>,
+    pub classification_confidence: Option<f32>,
+    pub classifier_version: Option<String>,
+    pub is_sensitive: bool,
+    pub sensitive_reasons: Vec<String>,
+    pub source_app: Option<String>,
+    pub metadata: serde_json::Value,
+    pub timestamp: Option<String>,
+    pub expires_at: Option<String>,
     pub is_pinned: bool,
+    pub is_encrypted: bool,
+    pub char_count: u32,
+    pub word_count: u32,
+    pub preview: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClipboardHistoryResponse {
     pub items: Vec<ClipboardItem>,
     pub total: usize,
+    pub limit: u32,
+    pub offset: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClipboardCaptureRequest {
+    pub content: String,
+    pub source_app: Option<String>,
+    pub content_type: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClipboardCaptureResponse {
+    pub success: bool,
+    pub stored: bool,
+    pub reason: String,
+    pub is_sensitive: bool,
+    pub redacted_content: String,
+    pub item: Option<ClipboardItem>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -286,7 +320,114 @@ pub async fn clipboard_get_history(
 ) -> Result<ClipboardHistoryResponse, String> {
     let client = &state.backend_client;
     let response = client.get_clipboard_history(limit, offset).await.map_err(|e| e.to_string())?;
-    Ok(response)
+    Ok(ClipboardHistoryResponse {
+        items: response.items,
+        total: response.total,
+        limit: response.limit,
+        offset: response.offset,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: Clipboard Intelligence commands
+// ---------------------------------------------------------------------------
+
+/// Read the current clipboard text via the configured provider and
+/// POST it to the backend's ``/api/v1/clipboard/capture`` endpoint.
+/// Returns the structured capture result to the frontend so the UI
+/// can show the redacted preview / sensitive badge inline.
+#[tauri::command]
+pub async fn clipboard_capture_now(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    source_app: Option<String>,
+) -> Result<ClipboardCaptureResponse, String> {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    let text = app
+        .clipboard()
+        .read_text()
+        .map_err(|e| e.to_string())?;
+    if text.is_empty() {
+        return Ok(ClipboardCaptureResponse {
+            success: true,
+            stored: false,
+            reason: "empty_content".to_string(),
+            is_sensitive: false,
+            redacted_content: String::new(),
+            item: None,
+        });
+    }
+    let req = ClipboardCaptureRequest {
+        content: text,
+        source_app,
+        content_type: None,
+        metadata: None,
+    };
+    let resp = state
+        .backend_client
+        .capture_clipboard(&req)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(ClipboardCaptureResponse {
+        success: resp.success,
+        stored: resp.stored,
+        reason: resp.reason,
+        is_sensitive: resp.is_sensitive,
+        redacted_content: resp.redacted_content,
+        item: resp.item,
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClipboardPinRequest {
+    pub item_id: String,
+    pub pinned: bool,
+}
+
+#[tauri::command]
+pub async fn clipboard_pin_item(
+    state: State<'_, AppState>,
+    request: ClipboardPinRequest,
+) -> Result<ClipboardItem, String> {
+    state
+        .backend_client
+        .pin_clipboard_item(&request.item_id, request.pinned)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClipboardDeleteRequest {
+    pub item_id: String,
+}
+
+#[tauri::command]
+pub async fn clipboard_delete_item(
+    state: State<'_, AppState>,
+    request: ClipboardDeleteRequest,
+) -> Result<(), String> {
+    state
+        .backend_client
+        .delete_clipboard_item(&request.item_id)
+        .await
+        .map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClipboardClearRequest {
+    pub keep_pinned: Option<bool>,
+}
+
+#[tauri::command]
+pub async fn clipboard_clear_history(
+    state: State<'_, AppState>,
+    request: ClipboardClearRequest,
+) -> Result<usize, String> {
+    state
+        .backend_client
+        .clear_clipboard_history(request.keep_pinned.unwrap_or(true))
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

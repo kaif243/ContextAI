@@ -78,16 +78,51 @@ pub struct ScreenCaptureResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClipboardItem {
     pub id: String,
+    /// Raw content. Always empty for sensitive items — use
+    /// ``redacted_content`` and ``preview`` for display.
     pub content: String,
+    pub redacted_content: String,
     pub content_type: String,
-    pub timestamp: String,
+    pub classification: Option<String>,
+    pub classification_confidence: Option<f32>,
+    pub classifier_version: Option<String>,
+    pub is_sensitive: bool,
+    pub sensitive_reasons: Vec<String>,
+    pub source_app: Option<String>,
+    pub metadata: serde_json::Value,
+    pub timestamp: Option<String>,
+    pub expires_at: Option<String>,
     pub is_pinned: bool,
+    pub is_encrypted: bool,
+    pub char_count: u32,
+    pub word_count: u32,
+    pub preview: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClipboardHistoryResponse {
     pub items: Vec<ClipboardItem>,
     pub total: usize,
+    pub limit: u32,
+    pub offset: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClipboardCaptureRequest {
+    pub content: String,
+    pub source_app: Option<String>,
+    pub content_type: Option<String>,
+    pub metadata: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ClipboardCaptureResponse {
+    pub success: bool,
+    pub stored: bool,
+    pub reason: String,
+    pub is_sensitive: bool,
+    pub redacted_content: String,
+    pub item: Option<ClipboardItem>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -292,7 +327,7 @@ impl BackendClient {
         limit: Option<usize>,
         offset: Option<usize>,
     ) -> anyhow::Result<ClipboardHistoryResponse> {
-        let mut url = format!("{}/api/v1/clipboard/history", self.base_url);
+        let mut url = format!("{}/api/v1/clipboard", self.base_url);
         let mut params = Vec::new();
 
         if let Some(limit) = limit {
@@ -320,6 +355,80 @@ impl BackendClient {
 
         let result: ClipboardHistoryResponse = response.json().await?;
         Ok(result)
+    }
+
+    /// POST /api/v1/clipboard/capture — submit a new clipboard change.
+    pub async fn capture_clipboard(
+        &self,
+        request: &ClipboardCaptureRequest,
+    ) -> anyhow::Result<ClipboardCaptureResponse> {
+        let url = format!("{}/api/v1/clipboard/capture", self.base_url);
+        debug!("Clipboard capture request: {} bytes", request.content.len());
+        let response = self.http_client.post(&url).json(request).send().await?;
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(anyhow::anyhow!("capture failed: {} {}", status, body));
+        }
+        let result: ClipboardCaptureResponse = response.json().await?;
+        Ok(result)
+    }
+
+    /// PATCH /api/v1/clipboard/{id}/pin
+    pub async fn pin_clipboard_item(
+        &self,
+        item_id: &str,
+        pinned: bool,
+    ) -> anyhow::Result<ClipboardItem> {
+        let url = format!("{}/api/v1/clipboard/{}/pin", self.base_url, item_id);
+        let body = serde_json::json!({ "pinned": pinned });
+        let response = self
+            .http_client
+            .patch(&url)
+            .json(&body)
+            .send()
+            .await?;
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "pin failed: {}",
+                response.status()
+            ));
+        }
+        let result: ClipboardItem = response.json().await?;
+        Ok(result)
+    }
+
+    /// DELETE /api/v1/clipboard/{id}
+    pub async fn delete_clipboard_item(&self, item_id: &str) -> anyhow::Result<()> {
+        let url = format!("{}/api/v1/clipboard/{}", self.base_url, item_id);
+        let response = self.http_client.delete(&url).send().await?;
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "delete failed: {}",
+                response.status()
+            ));
+        }
+        Ok(())
+    }
+
+    /// DELETE /api/v1/clipboard — clear history.
+    pub async fn clear_clipboard_history(
+        &self,
+        keep_pinned: bool,
+    ) -> anyhow::Result<usize> {
+        let url = format!(
+            "{}/api/v1/clipboard?keep_pinned={}",
+            self.base_url, keep_pinned
+        );
+        let response = self.http_client.delete(&url).send().await?;
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!(
+                "clear failed: {}",
+                response.status()
+            ));
+        }
+        let v: serde_json::Value = response.json().await?;
+        Ok(v.get("affected").and_then(|x| x.as_u64()).unwrap_or(0) as usize)
     }
 
     pub async fn index_folder(&self, request: FileIndexRequest) -> anyhow::Result<FileIndexResponse> {

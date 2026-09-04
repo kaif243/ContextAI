@@ -80,7 +80,7 @@ def test_settings_persistence(client):
 
 def test_get_clipboard_history_empty(client):
     """Test getting clipboard history when empty."""
-    response = client.get("/api/v1/clipboard/history")
+    response = client.get("/api/v1/clipboard")
     assert response.status_code == 200
 
     data = response.json()
@@ -88,27 +88,33 @@ def test_get_clipboard_history_empty(client):
     assert data["items"] == []
 
 
-def test_add_clipboard_item(client):
-    """Test adding a clipboard item."""
+def test_capture_clipboard_item(client):
+    """Test capturing a clipboard item via the new /capture endpoint."""
     response = client.post(
-        "/api/v1/clipboard/add",
-        params={"content": "Test content", "content_type": "text"},
+        "/api/v1/clipboard/capture",
+        json={"content": "Test content", "content_type": "text"},
     )
     assert response.status_code == 200
 
     data = response.json()
     assert data["success"] is True
-    assert "id" in data
+    assert data["stored"] is True
+    assert data["item"] is not None
+    assert data["item"]["id"]
 
 
 def test_clipboard_history_with_items(client):
     """Test clipboard history with items."""
-    # Add items
-    client.post("/api/v1/clipboard/add", params={"content": "Item 1"})
-    client.post("/api/v1/clipboard/add", params={"content": "Item 2"})
+    # Capture items
+    client.post(
+        "/api/v1/clipboard/capture", json={"content": "Item 1", "content_type": "text"}
+    )
+    client.post(
+        "/api/v1/clipboard/capture", json={"content": "Item 2", "content_type": "text"}
+    )
 
     # Get history
-    response = client.get("/api/v1/clipboard/history")
+    response = client.get("/api/v1/clipboard")
     data = response.json()
 
     assert data["total"] >= 2

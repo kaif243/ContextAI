@@ -69,15 +69,57 @@ export interface ScreenCaptureResponse {
 
 export interface ClipboardItem {
   id: string;
+  /** Raw content. Always empty for sensitive items. */
   content: string;
+  redacted_content: string;
   content_type: string;
-  timestamp: string;
+  classification: string | null;
+  classification_confidence: number | null;
+  classifier_version: string | null;
+  is_sensitive: boolean;
+  sensitive_reasons: string[];
+  source_app: string | null;
+  metadata: Record<string, unknown>;
+  timestamp: string | null;
+  expires_at: string | null;
   is_pinned: boolean;
+  is_encrypted: boolean;
+  char_count: number;
+  word_count: number;
+  preview: string;
 }
 
 export interface ClipboardHistoryResponse {
   items: ClipboardItem[];
   total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface ClipboardCaptureRequest {
+  content: string;
+  source_app?: string;
+  content_type?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ClipboardCaptureResponse {
+  success: boolean;
+  stored: boolean;
+  reason: string;
+  is_sensitive: boolean;
+  redacted_content: string;
+  item: ClipboardItem | null;
+}
+
+export interface ClipboardLLMResponse {
+  item_id: number;
+  action: 'explain' | 'summarise';
+  answer: string;
+  is_error: boolean;
+  error_message: string | null;
+  model_used: string | null;
+  processing_ms: number | null;
 }
 
 export interface FileIndexRequest {

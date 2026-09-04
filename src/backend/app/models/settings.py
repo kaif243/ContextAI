@@ -67,6 +67,22 @@ class Settings(BaseModel):
         Integer, default=365, nullable=False
     )
 
+    # Phase 3 — clipboard-specific tunables. Defaults are kept in
+    # sync with ``app.core.config.AppSettings``; this model is the
+    # *user-facing* representation so we make the columns explicit.
+    clipboard_history_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    clipboard_max_bytes: Mapped[int] = mapped_column(
+        Integer, default=200_000, nullable=False
+    )
+    clipboard_store_sensitive: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    clipboard_keep_raw_when_sensitive: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="settings")
 
@@ -86,4 +102,8 @@ class Settings(BaseModel):
             "llm_provider": self.llm_provider,
             "llm_model": self.llm_model,
             "log_level": self.log_level,
+            "clipboard_history_enabled": self.clipboard_history_enabled,
+            "clipboard_max_bytes": self.clipboard_max_bytes,
+            "clipboard_store_sensitive": self.clipboard_store_sensitive,
+            "clipboard_keep_raw_when_sensitive": self.clipboard_keep_raw_when_sensitive,
         }

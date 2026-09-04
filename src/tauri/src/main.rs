@@ -3,6 +3,7 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod clipboard;
 mod commands;
 mod hotkey;
 mod ipc;
@@ -22,7 +23,10 @@ use tracing_subscriber::{EnvFilter, fmt, layer::SubscriberExt, util::SubscriberI
 use commands::{
     get_app_info, check_backend_health, toggle_main_window,
     get_settings, update_settings,
-    screen_capture, capture_screen_now, clipboard_get_history,
+    screen_capture, capture_screen_now,
+    clipboard_get_history,
+    clipboard_capture_now, clipboard_pin_item, clipboard_delete_item,
+    clipboard_clear_history,
     file_index_folder, file_search,
 };
 use hotkey::GlobalHotkeyManager;
@@ -154,6 +158,10 @@ pub fn run() {
             screen_capture,
             capture_screen_now,
             clipboard_get_history,
+            clipboard_capture_now,
+            clipboard_pin_item,
+            clipboard_delete_item,
+            clipboard_clear_history,
             file_index_folder,
             file_search,
         ])
