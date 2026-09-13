@@ -34,6 +34,8 @@ class PermissionCategory:
         "list_memory",
         "capture_screenshot",
         "analyze_screen",
+        "list_files",
+        "get_file",
     ]
 
     # YELLOW - Operations that modify data but are generally safe
@@ -48,6 +50,12 @@ class PermissionCategory:
         "summarize_content",
         "save_screenshot",
         "ask_screen_question",
+        "index_file",
+        "reindex_file",
+        "reanalyse_file",
+        "summarise_file",
+        "explain_file",
+        "ask_file",
     ]
 
     # RED - Dangerous operations that require explicit confirmation
@@ -61,6 +69,7 @@ class PermissionCategory:
         "clear_clipboard",
         "clear_memory",
         "clear_all_data",
+        "clear_file_index",
     ]
 
 

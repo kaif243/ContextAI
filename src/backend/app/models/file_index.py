@@ -18,6 +18,8 @@ class FileIndex(BaseModel):
         Index("ix_file_type", "file_type"),
         Index("ix_file_classification", "classification"),
         Index("ix_file_modified", "modified_at"),
+        Index("ix_file_status", "is_indexed", "is_deleted"),
+        Index("ix_file_extraction_status", "extraction_status"),
     )
 
     # Basic file info
@@ -32,22 +34,36 @@ class FileIndex(BaseModel):
     modified_at: Mapped[datetime | None] = mapped_column(nullable=True)
     accessed_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
-    # Classification (ML-based)
+    # Classification (heuristic baseline; ML-swap ready)
     classification: Mapped[str | None] = mapped_column(String(50), nullable=True)
     classification_confidence: Mapped[float | None] = mapped_column(
         Float, nullable=True
     )
+    classifier_version: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Content
     content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     text_content: Mapped[str | None] = mapped_column(Text, nullable=True)
     extracted_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    text_truncated: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     # Metadata
     metadata_json: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     tags: Mapped[str] = mapped_column(String(1000), default="", nullable=False)
 
-    # Status
+    # Status (Phase 4)
+    extraction_status: Mapped[str] = mapped_column(
+        String(20), default="pending", nullable=False
+    )
+    extraction_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    extraction_attempts: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
+    indexed_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    # Existing
     is_indexed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     last_checked: Mapped[datetime | None] = mapped_column(nullable=True)
@@ -77,7 +93,12 @@ class FileIndex(BaseModel):
 
 
 class FileChunk(BaseModel):
-    """File chunk model for storing text chunks with embeddings."""
+    """File chunk model for storing text chunks with embeddings.
+
+    NOTE: Defined for forward-compatibility with Phase 6 (RAG). Phase 4
+    does not write to this table — it only keeps extracted text on the
+    ``FileIndex`` row for deterministic local search.
+    """
 
     __tablename__ = "file_chunks"
     __table_args__ = (

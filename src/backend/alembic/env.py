@@ -10,7 +10,8 @@ from sqlalchemy import engine_from_config, pool
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.core.config import settings  # noqa: E402
+# pyrefly: ignore [missing-import]
+from app.core.config import settings, database_settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
 from app.models import (  # noqa: E402,F401
     user,
@@ -26,7 +27,7 @@ from app.models import (  # noqa: E402,F401
 config = context.config
 
 # Override sqlalchemy.url with settings
-config.set_main_option("sqlalchemy.url", settings.database_settings.url)
+config.set_main_option("sqlalchemy.url", database_settings.url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:

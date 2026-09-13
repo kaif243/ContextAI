@@ -431,6 +431,46 @@ pub async fn clipboard_clear_history(
 }
 
 #[tauri::command]
+pub async fn file_select(
+    state: State<'_, AppState>,
+    app: AppHandle,
+) -> Result<FileSelectResponse, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    // Open a native file picker; the user explicitly chooses one file.
+    // This does not scan or watch the filesystem — only the selected path is used.
+    let path = app
+        .dialog()
+        .open(
+            None::<String>,
+            Some("Select a file to index with ContextAI"),
+            None::<String>,
+        )
+        .map_err(|e| format!("file picker failed: {e}"))?;
+
+    let Some(path) = path else {
+        // User cancelled the picker — this is a normal, non-error outcome.
+        return Ok(FileSelectResponse {
+            success: false,
+            stored: false,
+            reason: "cancelled".to_string(),
+            changed: false,
+            reused: false,
+            raw_path: String::new(),
+            file: None,
+            files_indexed: 0,
+            errors: vec![],
+        });
+    };
+
+    let client = &state.backend_client;
+    client
+        .select_file(&path)
+        .await
+        .map_err(|e| format!("backend file select failed: {e}"))
+}
+
+#[tauri::command]
 pub async fn file_index_folder(
     state: State<'_, AppState>,
     request: FileIndexRequest,

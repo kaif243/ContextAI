@@ -132,6 +132,43 @@ class AppSettings(BaseSettings):
     # ``activity_classifier`` toggle for screen.
     content_classifier: Literal["baseline", "ml"] = "baseline"
 
+    # Phase 4 — File Intelligence
+    # Master toggle. When False the API rejects ``/files/select`` and
+    # ``/files/folder`` requests. The Tauri layer must not surface
+    # the file picker in this state.
+    file_intelligence_enabled: bool = False
+    # Maximum size of a single user-selected file (in bytes). Files
+    # larger than this are refused at the validation step. Default
+    # 25 MB is conservative; users can raise it through Settings.
+    file_max_bytes: int = 25 * 1024 * 1024
+    # Comma-separated list of allowed file extensions (without the
+    # leading dot). Anything not in this set is reported as
+    # ``unsupported_format``. Kept conservative by default.
+    file_allowed_extensions: str = (
+        "txt,md,markdown,json,csv,py,js,ts,tsx,jsx,rs,go,java,c,cpp,h,hpp,"
+        "rb,php,sh,ps1,yaml,yml,toml,xml,html,css,sql,env,log,"
+        "pdf,docx"
+    )
+    # Maximum length of extracted text we keep on the row. The full
+    # file is never stored — only a hash + a safe preview. Files
+    # that would extract to more characters than this have their
+    # text truncated, and a ``text_truncated=true`` flag is set.
+    file_max_text_chars: int = 200_000
+    # Maximum number of characters of extracted text sent to the
+    # LLM for summarise / explain. Larger texts are truncated.
+    file_llm_text_chars: int = 8_000
+    # Default daily retention for indexed files (0 = keep forever).
+    # A periodic cleanup is the responsibility of the host
+    # application; the API exposes ``/files/purge`` for manual
+    # cleanup.
+    file_retention_days: int = 0
+    # Phase 4 file classifier toggle. Mirrors the existing
+    # ``activity_classifier`` / ``content_classifier`` pattern so a
+    # real ML model can replace the baseline later.
+    file_classifier: Literal["baseline", "ml"] = "baseline"
+    # Allowed root directories for file selection (empty = any absolute path).
+    file_allowed_roots: list[str] = []
+
 
 @lru_cache
 def get_database_settings() -> DatabaseSettings:

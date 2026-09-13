@@ -27,7 +27,7 @@ use commands::{
     clipboard_get_history,
     clipboard_capture_now, clipboard_pin_item, clipboard_delete_item,
     clipboard_clear_history,
-    file_index_folder, file_search,
+    file_select, file_index_folder, file_search,
 };
 use hotkey::GlobalHotkeyManager;
 use ipc::BackendClient;
@@ -162,6 +162,7 @@ pub fn run() {
             clipboard_pin_item,
             clipboard_delete_item,
             clipboard_clear_history,
+            file_select,
             file_index_folder,
             file_search,
         ])

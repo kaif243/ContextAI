@@ -141,6 +141,35 @@ pub struct FileIndexResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileSelectResponse {
+    pub success: bool,
+    pub stored: bool,
+    pub reason: String,
+    pub changed: bool,
+    pub reused: bool,
+    pub raw_path: String,
+    pub file: Option<FileRowSummary>,
+    pub files_indexed: usize,
+    pub errors: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileRowSummary {
+    pub id: u32,
+    pub path: String,
+    pub name: String,
+    pub file_type: String,
+    pub extension: Option<String>,
+    pub size_bytes: u64,
+    pub modified_at: Option<String>,
+    pub classification: Option<String>,
+    pub classification_confidence: Option<f32>,
+    pub extraction_status: String,
+    pub is_indexed: bool,
+    pub indexed_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileSearchRequest {
     pub query: String,
     pub folder_path: Option<String>,
@@ -469,6 +498,24 @@ impl BackendClient {
         }
 
         let result: FileSearchResponse = response.json().await?;
+        Ok(result)
+    }
+
+    /// POST /api/v1/files/select — index a single user-selected file.
+    pub async fn select_file(&self, path: &str) -> anyhow::Result<FileSelectResponse> {
+        use serde_json::json;
+        let url = format!("{}/api/v1/files/select", self.base_url);
+        debug!("File select request: path={}", path);
+
+        let body = json!({ "path": path });
+        let response = self.http_client.post(&url).json(&body).send().await?;
+
+        if !response.status().is_success() {
+            let error = response.text().await.unwrap_or_default();
+            return Err(anyhow::anyhow!("File select failed: {}", error));
+        }
+
+        let result: FileSelectResponse = response.json().await?;
         Ok(result)
     }
 
