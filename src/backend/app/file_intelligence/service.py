@@ -206,6 +206,55 @@ class FileService:
         return self._retention_days
 
     # ------------------------------------------------------------------
+    # Classification integration (H4)
+    # ------------------------------------------------------------------
+    def _run_classification(
+        self,
+        filename: str,
+        type_info,
+        content_preview: str = "",
+    ) -> Any:
+        """Select classifier based on settings; ML first with graceful fallback."""
+        from app.ml.models.file_classifier import FileClassifierInference
+        from app.ml.features.file_features import extract_features
+
+        # Always attempt ML when configured; never crash the service.
+        if getattr(settings, "file_classifier", "baseline") == "ml":
+            try:
+                ml_inference = FileClassifierInference()
+                if ml_inference.is_available():
+                    # Build H2 feature vector from the file information available.
+                    feature_dict = extract_features(
+                        filename=filename,
+                        file_type_info=type_info,
+                        size_bytes=None,
+                        extension=type_info.extension,
+                        text_content=content_preview or None,
+                        classification=None,
+                        classification_confidence=None,
+                        is_indexed=False,
+                        extraction_status=None,
+                        extraction_attempts=0,
+                    )
+                    result = ml_inference.predict(feature_dict)
+                    # Convert MLResult back to FileClassification for service compatibility.
+                    from app.file_intelligence.classifier import FileClassification
+                    return FileClassification(
+                        label=result.label,
+                        confidence=result.confidence,
+                        signals=result.signals or {},
+                        version=result.model_version,
+                    )
+            except Exception as exc:
+                logger.warning("ML classification failed, falling back to baseline: %s", exc)
+        # Fallback to deterministic baseline (always safe).
+        return classify_file(
+            filename=filename,
+            type_info=type_info,
+            content_preview=content_preview,
+        )
+
+    # ------------------------------------------------------------------
     # Validation helper
     # ------------------------------------------------------------------
     def validate_user_path(self, raw_path: str | Path) -> Path:
@@ -306,7 +355,7 @@ class FileService:
         # Extract content. The extractor itself never raises.
         extractor = self._factory.get(type_info.file_type)
         result = extractor.extract(resolved, max_chars=self.max_text_chars)
-        classification = classify_file(
+        classification = self._run_classification(
             filename=stat.filename,
             type_info=type_info,
             content_preview=(result.text or "")[:2048],
@@ -591,7 +640,7 @@ class FileService:
         # Reuse the stored preview for the notes/document signal.
         preview = (row.extracted_text or "")[:2048]
         type_info = detect_file_type(extension=stat.extension, mime_type="")
-        classification = classify_file(
+        classification = self._run_classification(
             filename=stat.filename, type_info=type_info, content_preview=preview
         )
         row.classification = classification.label
